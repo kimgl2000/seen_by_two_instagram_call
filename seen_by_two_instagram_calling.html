@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="seen.by.two">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>seen.by.two</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  :root{
+    --bg:#ffffff; --text:#000; --text2:#737373; --line:#dbdbdb; --line2:#efefef;
+    --blue:#0095f6; --red:#ed4956;
+  }
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#000; color:var(--text);
+    display:flex; justify-content:center;
+  }
+  #app{
+    width:100%; max-width:460px; background:var(--bg);
+    height:100dvh; position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .screen{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    background:var(--bg); overflow:hidden;
+  }
+  .screen.hidden{ display:none !important; }
+  .scroll{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+
+  /* ===== top bar ===== */
+  .topbar{
+    height:48px; flex:0 0 48px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 12px; border-bottom:1px solid var(--line2); background:var(--bg);
+  }
+  .topbar .uname{ display:flex; align-items:center; gap:5px; font-size:20px; font-weight:700;}
+  .topbar .uname svg{width:13px;height:13px;}
+  .topbar .actions{ display:flex; align-items:center; gap:18px;}
+  .icon-btn{ background:none;border:none;cursor:pointer;display:flex;align-items:center;color:var(--text);}
+  .icon-btn svg{ width:24px; height:24px; stroke:var(--text); fill:none; stroke-width:1.8;}
+  .back-btn svg{ width:24px; height:24px;}
+
+  /* ===== profile header ===== */
+  .phead{ padding:16px 16px 0;}
+  .prow{ display:flex; align-items:center; gap:24px;}
+  .avatar{
+    width:84px; height:84px; border-radius:50%; flex:0 0 84px; cursor:pointer;
+    background:#efefef center/cover no-repeat;
+    border:1px solid var(--line); position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .avatar svg{ width:40px; height:40px; fill:#c7c7c7;}
+  .pstats{ flex:1; display:flex; justify-content:space-around; align-items:center;}
+  .pstats .stat{ text-align:center;}
+  .pstats .n{ font-size:18px; font-weight:700;}
+  .pstats .l{ font-size:13px; color:var(--text);}
+  .pbio{ padding:12px 0 4px;}
+  .pbio .name{ font-size:14px; font-weight:600;}
+  .pbio .desc{ font-size:14px; line-height:1.4; white-space:pre-wrap;}
+  .pbtns{ display:flex; gap:6px; padding:12px 0 4px;}
+  .pbtns button{
+    flex:1; height:32px; border:none; border-radius:8px; background:#efefef;
+    font-size:14px; font-weight:600; color:var(--text); cursor:pointer;
+  }
+
+  /* ===== tabs ===== */
+  .tabs{ display:flex; border-top:1px solid var(--line2); margin-top:14px;}
+  .tab{ flex:1; height:44px; display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer; border-bottom:1px solid transparent; color:#c7c7c7;}
+  .tab.active{ color:var(--text); border-bottom:1px solid var(--text);}
+  .tab svg{ width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.8;}
+  .tab.active svg.fillicon{ fill:currentColor; stroke:none;}
+
+  /* ===== grid ===== */
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:2px;}
+  .cell{ position:relative; aspect-ratio:1/1; background:#fafafa; overflow:hidden; cursor:pointer;}
+  .cell img,.cell video{ width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;}
+  .cell .empty{ width:100%;height:100%;background:#f0f0f0;}
+  .cell .reeltag{ position:absolute; top:6px; right:6px;}
+  .cell .reeltag svg{ width:18px;height:18px; fill:#fff; filter:drop-shadow(0 0 2px rgba(0,0,0,.4));}
+  .addtile{ display:flex;align-items:center;justify-content:center; background:#fafafa; border:1px dashed var(--line);}
+  .addtile svg{ width:34px;height:34px; stroke:#b0b0b0; fill:none; stroke-width:1.6;}
+
+  .emptystate{ padding:60px 24px; text-align:center; color:var(--text2);}
+  .emptystate .ring{ width:62px;height:62px;border:2px solid var(--text);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .emptystate .ring svg{width:30px;height:30px;stroke:var(--text);fill:none;stroke-width:1.6;}
+  .emptystate h3{ font-size:22px; font-weight:800; color:var(--text); margin-bottom:6px;}
+  .emptystate p{ font-size:14px; margin-bottom:14px;}
+  .emptystate button{ background:none;border:none;color:var(--blue);font-weight:600;font-size:14px;cursor:pointer;}
+
+  /* ===== feed ===== */
+  .post{ border-bottom:1px solid var(--line2); padding-bottom:8px;}
+  .post .head{ display:flex; align-items:center; gap:10px; padding:10px 12px;}
+  .post .head .av{ width:32px;height:32px;border-radius:50%;background:#efefef center/cover no-repeat;
+    flex:0 0 32px; border:1px solid var(--line); display:flex;align-items:center;justify-content:center;}
+  .post .head .av svg{width:16px;height:16px;fill:#c7c7c7;}
+  .post .head .who{ flex:1; font-size:13px; font-weight:600; line-height:1.2;}
+  .post .head .who .date{ display:block; font-size:11px; font-weight:400; color:var(--text2); cursor:pointer;}
+  .post .media{ width:100%; background:#000; aspect-ratio:1/1; display:flex;align-items:center;justify-content:center;}
+  .post .media img,.post .media video{ width:100%; height:100%; object-fit:contain; background:#000;}
+  .post .media .ph{ color:#777; font-size:13px;}
+  .post .bar{ display:flex; align-items:center; gap:16px; padding:8px 12px 2px;}
+  .post .bar svg{ width:24px;height:24px; stroke:var(--text); fill:none; stroke-width:1.8; cursor:pointer;}
+  .post .bar svg.liked{ fill:var(--red); stroke:var(--red);}
+  .post .bar .spacer{ flex:1;}
+  .post .likes{ font-size:13px; font-weight:600; padding:2px 12px;}
+  .post .cap{ font-size:14px; line-height:1.4; padding:2px 12px; white-space:pre-wrap;}
+  .post .cap b{ font-weight:600; margin-right:5px;}
+  .post .comments{ padding:4px 12px 0;}
+  .post .comments .c{ font-size:14px; line-height:1.5;}
+  .post .comments .c b{ font-weight:600; margin-right:6px;}
+  .post .comments .cwrap{ margin-bottom:6px;}
+  .post .comments .trans-link{ display:inline-block; font-size:12px; color:var(--text2); cursor:pointer; margin-top:1px;}
+  .post .comments .trans-out{ display:none; font-size:14px; line-height:1.5; color:#262626; margin-top:2px; text-align:right;}
+  .post .addc{ display:flex; align-items:center; gap:8px; padding:8px 12px 2px;}
+  .post .addc .cname{ width:84px; flex:0 0 84px; border:none; border-bottom:1px solid var(--line2);
+    font-size:12px; padding:4px 2px; outline:none; color:var(--text2);}
+  .post .addc .ctext{ flex:1; border:none; border-bottom:1px solid var(--line2);
+    font-size:13px; padding:4px 2px; outline:none;}
+  .post .addc button{ background:none;border:none;color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;opacity:.4;}
+  .post .addc button.on{ opacity:1;}
+
+  /* ===== reels player ===== */
+  #reelsScreen{ background:#000;}
+  .reelsfeed{ flex:1; overflow-y:auto; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch;}
+  .reel{ height:100dvh; scroll-snap-align:start; position:relative; display:flex;align-items:center;justify-content:center; background:#000;}
+  .reel video{ width:100%; height:100%; object-fit:contain;}
+  .reel .rinfo{ position:absolute; right:14px; bottom:90px; color:#fff; max-width:75%;}
+  .reel .rinfo .u{ font-size:14px; font-weight:700; display:flex; gap:6px; align-items:center;}
+  .reel .rinfo .d{ font-size:12px; opacity:.85; margin-top:4px; cursor:pointer;}
+  .reel .rinfo .cap{ font-size:13px; margin-top:6px; line-height:1.4;}
+  .reel .empty{ color:#888; font-size:14px;}
+  #reelsScreen .topbar{ position:absolute; top:0; left:0; right:0; z-index:5; background:transparent; border:none; color:#fff;}
+  #reelsScreen .topbar .uname,#reelsScreen .topbar .icon-btn svg{ color:#fff; stroke:#fff;}
+  #reelsScreen .topbar .uname{ color:#fff;}
+
+  /* ===== bottom nav ===== */
+  .botnav{ min-height:50px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-around;
+    border-top:1px solid var(--line2); background:var(--bg); padding-bottom:env(safe-area-inset-bottom);}
+  .botnav button{ background:none;border:none;cursor:pointer;display:flex;align-items:center;color:var(--text);}
+  .botnav svg{ width:26px;height:26px; stroke:var(--text); fill:none; stroke-width:1.7;}
+  .botnav .pf{ width:26px;height:26px;border-radius:50%;background:#efefef center/cover no-repeat;border:1px solid var(--line);}
+  .botnav button.active .pf{ border:2px solid var(--text);}
+
+  /* ===== sheets / modals ===== */
+  .sheet-bg{ position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:50; display:none; align-items:flex-end;}
+  .sheet-bg.show{ display:flex;}
+  .sheet{ width:100%; background:var(--bg); border-radius:14px 14px 0 0; padding:8px 0 20px; animation:up .25s ease;}
+  @keyframes up{ from{transform:translateY(100%);} to{transform:translateY(0);} }
+  .sheet .grab{ width:38px;height:4px;background:#d0d0d0;border-radius:2px;margin:6px auto 12px;}
+  .sheet .opt{ width:100%; background:none;border:none; text-align:left; padding:15px 22px; font-size:16px; cursor:pointer; display:flex;align-items:center;gap:14px; color:var(--text);}
+  .sheet .opt svg{ width:22px;height:22px; stroke:var(--text); fill:none; stroke-width:1.8;}
+  .sheet .opt.danger{ color:var(--red);} .sheet .opt.danger svg{ stroke:var(--red);}
+
+  /* center modal (upload / date) */
+  .modal-bg{ position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:60; display:none; align-items:center; justify-content:center; padding:20px;}
+  .modal-bg.show{ display:flex;}
+  .modal{ width:100%; max-width:360px; background:var(--bg); border-radius:14px; overflow:hidden; animation:pop .2s ease;}
+  @keyframes pop{ from{transform:scale(.92);opacity:0;} to{transform:scale(1);opacity:1;} }
+  .modal .mhead{ padding:16px; font-size:16px; font-weight:700; text-align:center; border-bottom:1px solid var(--line2);}
+  .modal .mbody{ padding:16px; display:flex; flex-direction:column; gap:12px;}
+  .modal .preview{ width:100%; aspect-ratio:1/1; background:#f0f0f0; border-radius:8px; overflow:hidden; display:flex;align-items:center;justify-content:center;}
+  .modal .preview img,.modal .preview video{ width:100%;height:100%;object-fit:cover;}
+  .modal label{ font-size:12px; color:var(--text2); font-weight:600;}
+  .modal input[type=date],.modal textarea{ width:100%; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:14px; font-family:inherit; outline:none; resize:none;}
+  .modal .mfoot{ display:flex; border-top:1px solid var(--line2);}
+  .modal .mfoot button{ flex:1; height:48px; background:none;border:none;font-size:15px;cursor:pointer; color:var(--text);}
+  .modal .mfoot button.primary{ color:var(--blue); font-weight:700; border-left:1px solid var(--line2);}
+
+  .hidden-input{ display:none;}
+
+  /* ===== voice call screen ===== */
+  #callScreen{ background:#1a1320; color:#fff; align-items:center; }
+  #callScreen .callbg{ position:absolute; inset:0; background:
+     radial-gradient(120% 80% at 50% 18%, #5b2a6e 0%, #2a1830 55%, #140d18 100%); }
+  .callwrap{ position:relative; z-index:2; flex:1; width:100%; display:flex; flex-direction:column;
+     align-items:center; padding:calc(env(safe-area-inset-top) + 56px) 24px calc(env(safe-area-inset-bottom) + 40px); }
+  .callwrap .toplabel{ font-size:14px; opacity:.85; display:flex; align-items:center; gap:7px; letter-spacing:.2px;}
+  .callwrap .toplabel svg{ width:17px; height:17px;}
+  .call-av{ width:118px; height:118px; border-radius:50%; margin:40px 0 22px;
+     background:#3a2b44 center/cover no-repeat; border:2px solid rgba(255,255,255,.25);
+     display:flex; align-items:center; justify-content:center; box-shadow:0 8px 40px rgba(0,0,0,.4);}
+  .call-av svg{ width:60px; height:60px; fill:rgba(255,255,255,.55);}
+  .call-av.ringing{ animation:callpulse 1.6s ease-in-out infinite;}
+  @keyframes callpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,255,255,.18);} 50%{ box-shadow:0 0 0 16px rgba(255,255,255,0);} }
+  .call-name{ font-size:26px; font-weight:600; direction:ltr;}
+  .call-status{ font-size:15px; opacity:.8; margin-top:8px; min-height:20px;}
+  .call-spacer{ flex:1;}
+
+  .call-actions{ width:100%; display:flex; justify-content:center; gap:70px;}
+  .call-incall-actions{ width:100%; display:flex; justify-content:space-around; align-items:flex-start; max-width:340px; display:none;}
+  .callbtn{ display:flex; flex-direction:column; align-items:center; gap:9px; background:none; border:none; color:#fff; cursor:pointer; font-size:13px;}
+  .cbtn{ width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .cbtn svg{ width:30px; height:30px; fill:#fff;}
+  .cbtn.decline{ background:#f5354b;} .cbtn.accept{ background:#27c06a;}
+  .cbtn.accept.ringing{ animation:wiggle 1.2s ease-in-out infinite;}
+  @keyframes wiggle{ 0%,100%{transform:rotate(0);} 25%{transform:rotate(-12deg);} 75%{transform:rotate(12deg);} }
+  .cbtn.sec{ width:58px; height:58px; background:rgba(255,255,255,.16);}
+  .cbtn.sec svg{ width:26px; height:26px;}
+  .cbtn.sec.on{ background:#fff;} .cbtn.sec.on svg{ fill:#1a1320;}
+  .cbtn.end{ background:#f5354b;}
+  #callScreen.incall .call-actions{ display:none;}
+  #callScreen.incall .call-incall-actions{ display:flex;}
+  #callScreen.incall .call-av.ringing{ animation:none;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ PROFILE ============ -->
+  <div class="screen" id="profileScreen">
+    <div class="topbar">
+      <div class="uname">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 9V7a5 5 0 00-10 0v2H5v13h14V9h-2zM9 7a3 3 0 016 0v2H9V7z"/></svg>
+        seen.by.two
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px;"><path d="M7 10l5 5 5-5z"/></svg>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="openAddMenu()" title="إضافة">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </button>
+        <button class="icon-btn" title="القائمة" onclick="openDirectorMenu()">
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="phead">
+        <div class="prow">
+          <div class="avatar" id="avatarBox" onclick="changeAvatar()">
+            <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></svg>
+          </div>
+          <div class="pstats">
+            <div class="stat"><div class="n" id="postCount">0</div><div class="l">منشور</div></div>
+            <div class="stat"><div class="n">0</div><div class="l">متابِع</div></div>
+            <div class="stat"><div class="n">0</div><div class="l">يتابِع</div></div>
+          </div>
+        </div>
+        <div class="pbio">
+          <div class="name">seen.by.two</div>
+          <div class="desc" id="bioText"></div>
+        </div>
+        <div class="pbtns">
+          <button onclick="editBio()">تعديل الملف الشخصي</button>
+          <button>مشاركة الملف الشخصي</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" id="tabGrid" onclick="switchTab('grid')">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+        </button>
+        <button class="tab" id="tabReels" onclick="switchTab('reels')">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 8h18M8 3l2.5 5M14 3l2.5 5"/><path d="M10.5 10.5v5l4-2.5z" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="tab" id="tabTag" onclick="switchTab('tag')">
+          <svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 012-2h12a2 2 0 012 2v13l-8-4-8 4V7z"/></svg>
+        </button>
+      </div>
+
+      <div id="gridWrap"></div>
+    </div>
+
+    <div class="botnav">
+      <button onclick="openFeed(0)"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg></button>
+      <button onclick="openReels()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 8h18M8 3l2.5 5M14 3l2.5 5"/><path d="M10.5 10.5v5l4-2.5z" fill="currentColor" stroke="none"/></svg></button>
+      <button onclick="openAddMenu()"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>
+      <button class="active"><span class="pf" id="navPf"></span></button>
+    </div>
+  </div>
+
+  <!-- ============ FEED ============ -->
+  <div class="screen hidden" id="feedScreen">
+    <div class="topbar">
+      <button class="icon-btn back-btn" onclick="showScreen('profileScreen')">
+        <svg viewBox="0 0 24 24"><polyline points="9 5 16 12 9 19"/></svg>
+      </button>
+      <div class="uname" style="font-size:16px;">المنشورات</div>
+      <div style="width:24px;"></div>
+    </div>
+    <div class="scroll" id="feedWrap"></div>
+  </div>
+
+  <!-- ============ REELS ============ -->
+  <div class="screen hidden" id="reelsScreen">
+    <div class="topbar">
+      <button class="icon-btn back-btn" onclick="showScreen('profileScreen')">
+        <svg viewBox="0 0 24 24" style="stroke:#fff;"><polyline points="9 5 16 12 9 19"/></svg>
+      </button>
+      <div class="uname" style="font-size:18px;color:#fff;">ريلز</div>
+      <button class="icon-btn" onclick="addMedia('reel')">
+        <svg viewBox="0 0 24 24" style="stroke:#fff;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="reelsfeed" id="reelsWrap"></div>
+  </div>
+
+  <!-- ============ VOICE CALL ============ -->
+  <div class="screen hidden" id="callScreen">
+    <div class="callbg"></div>
+    <div class="callwrap">
+      <div class="toplabel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r="1.2" fill="#fff" stroke="none"/></svg>
+        <span>مكالمة صوتية على Instagram</span>
+      </div>
+      <div class="call-av ringing" id="callAv">
+        <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></svg>
+      </div>
+      <div class="call-name">filmlogue_seongsu</div>
+      <div class="call-status" id="callStatus">مكالمة واردة…</div>
+
+      <div class="call-spacer"></div>
+
+      <!-- incoming -->
+      <div class="call-actions">
+        <button class="callbtn" onclick="declineCall()">
+          <span class="cbtn decline"><svg viewBox="0 0 24 24"><path d="M12 9c-2.4 0-4.7.4-6.8 1.1-.7.2-1.2.9-1.2 1.6v2.3c0 .5.4 1 1 1.1 1 .2 2 .3 3 .4.5 0 1-.4 1-1v-1.6c0-.4.3-.8.7-.9 1.4-.4 2.9-.6 4.3-.6s2.9.2 4.3.6c.4.1.7.5.7.9V14c0 .6.5 1 1 1 1-.1 2-.2 3-.4.6-.1 1-.6 1-1.1v-2.3c0-.7-.5-1.4-1.2-1.6C16.7 9.4 14.4 9 12 9z" transform="rotate(135 12 12)"/></svg></span>
+          <span>رفض</span>
+        </button>
+        <button class="callbtn" onclick="acceptCall()">
+          <span class="cbtn accept ringing" id="acceptBtn"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .7-.2 1l-2.3 2.2z"/></svg></span>
+          <span>قبول</span>
+        </button>
+      </div>
+
+      <!-- in-call -->
+      <div class="call-incall-actions">
+        <button class="callbtn" onclick="toggleCBtnState(this)">
+          <span class="cbtn sec"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11h-2z"/></svg></span>
+          <span>كتم</span>
+        </button>
+        <button class="callbtn" onclick="toggleCBtnState(this)">
+          <span class="cbtn sec"><svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 5V4L9 9H5zm11.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4z"/></svg></span>
+          <span>مكبر الصوت</span>
+        </button>
+        <button class="callbtn" onclick="toggleCBtnState(this)">
+          <span class="cbtn sec"><svg viewBox="0 0 24 24"><path d="M17 10.5V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-3.5l4 4v-11l-4 4z"/></svg></span>
+          <span>فيديو</span>
+        </button>
+        <button class="callbtn" onclick="endCall()">
+          <span class="cbtn end"><svg viewBox="0 0 24 24"><path d="M12 9c-2.4 0-4.7.4-6.8 1.1-.7.2-1.2.9-1.2 1.6v2.3c0 .5.4 1 1 1.1 1 .2 2 .3 3 .4.5 0 1-.4 1-1v-1.6c0-.4.3-.8.7-.9 1.4-.4 2.9-.6 4.3-.6s2.9.2 4.3.6c.4.1.7.5.7.9V14c0 .6.5 1 1 1 1-.1 2-.2 3-.4.6-.1 1-.6 1-1.1v-2.3c0-.7-.5-1.4-1.2-1.6C16.7 9.4 14.4 9 12 9z" transform="rotate(135 12 12)"/></svg></span>
+          <span>إنهاء</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ bottom sheet (add menu / post menu) ============ -->
+  <div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()">
+    <div class="sheet" id="sheetBody"></div>
+  </div>
+
+  <!-- ============ center modal (upload / date / bio) ============ -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal" id="modalBody"></div>
+  </div>
+
+  <!-- hidden file inputs -->
+  <input type="file" id="photoInput" class="hidden-input" accept="image/*">
+  <input type="file" id="videoInput" class="hidden-input" accept="video/*">
+  <input type="file" id="avatarInput" class="hidden-input" accept="image/*">
+  <input type="file" id="callerAvatarInput" class="hidden-input" accept="image/*">
+</div>
+
+<script>
+/* ---------- storage: metadata in localStorage, media blobs in IndexedDB ---------- */
+const KEY='seenbytwo_v1';
+let state={ posts:[], reels:[], avatar:'', bio:'' };
+
+function load(){ try{ const s=localStorage.getItem(KEY); if(s) state=JSON.parse(s);}catch(e){} }
+function stripUrl(it){ const c=Object.assign({},it); delete c._url; return c; }
+function save(){
+  try{
+    const clean={ posts:(state.posts||[]).map(stripUrl), reels:(state.reels||[]).map(stripUrl), avatar:state.avatar, bio:state.bio, callerAvatar:state.callerAvatar };
+    localStorage.setItem(KEY, JSON.stringify(clean));
+  }catch(e){ /* quota/preview: keep in memory */ }
+}
+
+/* IndexedDB media store */
+let _db=null;
+function openDB(){
+  if(_db) return Promise.resolve(_db);
+  return new Promise((res,rej)=>{
+    try{
+      const r=indexedDB.open('seenbytwo_media',1);
+      r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains('media')) r.result.createObjectStore('media',{keyPath:'id'}); };
+      r.onsuccess=()=>{ _db=r.result; res(_db); };
+      r.onerror=()=>rej(r.error);
+    }catch(e){ rej(e); }
+  });
+}
+async function idbPut(id,blob){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('media','readwrite'); tx.objectStore('media').put({id,blob}); tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(id){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('media','readonly'); const q=tx.objectStore('media').get(id); q.onsuccess=()=>res(q.result?q.result.blob:null); q.onerror=()=>rej(q.error); }); }
+async function idbDel(id){ try{ const db=await openDB(); return new Promise((res)=>{ const tx=db.transaction('media','readwrite'); tx.objectStore('media').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>res(); }); }catch(e){} }
+
+/* recreate object URLs from stored blobs after reload */
+async function hydrate(){
+  for(const arr of [state.posts||[], state.reels||[]]){
+    for(const it of arr){
+      if(it._url) continue;
+      if(it.mediaId){ try{ const b=await idbGet(it.mediaId); if(b) it._url=URL.createObjectURL(b); }catch(e){} }
+      else if(it.src){ it._url=it.src; } /* legacy base64 items */
+    }
+  }
+}
+function murl(it){ return it && (it._url || it.src) ? (it._url||it.src) : ''; }
+
+load();
+if(state.bio==='🔒 비공개 계정') state.bio='';
+if(!state.posts) state.posts=[]; if(!state.reels) state.reels=[];
+
+let currentTab='grid';
+function $(id){ return document.getElementById(id); }
+
+/* ---------- screen nav ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen video').forEach(v=>{ try{ v.pause(); }catch(e){} });
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  $(id).classList.remove('hidden');
+}
+
+/* ---------- date helpers ---------- */
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmt(d){
+  if(!d) return '';
+  const [y,m,day]=d.split('-');
+  const M=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']; return `${parseInt(day)} ${M[parseInt(m)-1]} ${y}`;
+}
+
+/* ---------- render profile ---------- */
+function renderProfile(){
+  $('postCount').textContent = state.posts.length;
+  $('bioText').textContent = state.bio || '';
+  const av = state.avatar;
+  const box=$('avatarBox');
+  if(av){ box.style.backgroundImage=`url(${av})`; box.querySelector('svg').style.display='none'; }
+  else { box.style.backgroundImage=''; box.querySelector('svg').style.display='block'; }
+  $('navPf').style.backgroundImage = av?`url(${av})`:'';
+  renderTab();
+}
+
+function switchTab(t){
+  currentTab=t;
+  $('tabGrid').classList.toggle('active', t==='grid');
+  $('tabReels').classList.toggle('active', t==='reels');
+  $('tabTag').classList.toggle('active', t==='tag');
+  renderTab();
+}
+
+function renderTab(){
+  const wrap=$('gridWrap');
+  if(currentTab==='grid') wrap.innerHTML = gridHTML(state.posts,'photo');
+  else if(currentTab==='reels') wrap.innerHTML = gridHTML(state.reels,'reel');
+  else wrap.innerHTML = `<div class="emptystate"><div class="ring"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 012-2h12a2 2 0 012 2v13l-8-4-8 4V7z"/></svg></div><h3>لا يوجد شيء بعد</h3><p>ستظهر هنا المنشورات التي أُشير إليك فيها.</p></div>`;
+}
+
+function gridHTML(items, kind){
+  if(items.length===0){
+    const label = kind==='reel' ? 'ريلز' : 'المنشورات';
+    return `<div class="emptystate">
+      <div class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M9 6l1.5-2h3L15 6"/></svg></div>
+      <h3>مشاركة ${label}</h3>
+      <p>${kind==='reel'?'أضف مقطع فيديو':'أضف صورة'} ليظهر هنا.</p>
+      <button onclick="${kind==='reel'?"addMedia('reel')":"addMedia('photo')"}">+ ${kind==='reel'?'إضافة فيديو':'إضافة صورة'}</button>
+    </div>`;
+  }
+  let cells='';
+  items.forEach((it,i)=>{
+    const open = kind==='reel' ? `onclick="openReels(${i})"` : `onclick="openFeed(${i})"`;
+    const u = murl(it);
+    const media = u
+      ? (kind==='reel'
+          ? `<video src="${u}" muted playsinline preload="metadata"></video><span class="reeltag"><svg viewBox="0 0 24 24"><path d="M3 7h18M8 3l2.5 4M14 3l2.5 4M10 11v6l5-3z" fill="#fff" stroke="#fff" stroke-width="1"/></svg></span>`
+          : `<img src="${u}">`)
+      : `<div class="empty"></div>`;
+    cells += `<div class="cell" ${open}>${media}</div>`;
+  });
+  const addLabel = kind==='reel'?'reel':'photo';
+  cells += `<div class="cell addtile" onclick="addMedia('${addLabel}')"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>`;
+  return `<div class="grid">${cells}</div>`;
+}
+
+/* ---------- feed ---------- */
+function openFeed(index){
+  const wrap=$('feedWrap');
+  if(state.posts.length===0){
+    wrap.innerHTML = `<div class="emptystate" style="margin-top:40px;"><div class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="3" y="6" width="18" height="14" rx="3"/></svg></div><h3>لا توجد منشورات</h3><p>أضف صورة لتبدأ.</p><button onclick="addMedia('photo')">+ إضافة صورة</button></div>`;
+    showScreen('feedScreen'); return;
+  }
+  wrap.innerHTML = state.posts.map((p,i)=>postHTML(p,i)).join('');
+  showScreen('feedScreen');
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('post-'+index);
+    if(el) el.scrollIntoView({block:'start'});
+  });
+}
+
+function postHTML(p,i){
+  const av = state.avatar?`style="background-image:url(${state.avatar})"`:'';
+  const avInner = state.avatar?'':`<svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></svg>`;
+  const media = murl(p) ? `<img src="${murl(p)}">` : `<div class="ph">لا توجد صورة</div>`;
+  const liked = p.liked ? 'liked' : '';
+  const heart = p.liked
+    ? `<svg class="liked" viewBox="0 0 24 24" onclick="toggleLike(${i})"><path d="M12 21s-7-4.6-9.5-8.2C.8 10.3 1.6 6.7 4.6 5.6 6.7 4.9 8.9 5.7 10 7.4c.5.7.9.7 1.3 0C12.4 5.7 14.6 4.9 16.7 5.6c3 1.1 3.8 4.7 2.1 7.2C19 16.4 12 21 12 21z"/></svg>`
+    : `<svg viewBox="0 0 24 24" onclick="toggleLike(${i})"><path d="M12 21s-7-4.6-9.5-8.2C.8 10.3 1.6 6.7 4.6 5.6 6.7 4.9 8.9 5.7 10 7.4c.5.7.9.7 1.3 0C12.4 5.7 14.6 4.9 16.7 5.6c3 1.1 3.8 4.7 2.1 7.2C19 16.4 12 21 12 21z"/></svg>`;
+  const comments = commentsHTML(p,i);
+  const cap = p.caption ? `<div class="cap"><b>seen.by.two</b>${esc(p.caption)}</div>` : '';
+  return `<div class="post" id="post-${i}">
+    <div class="head">
+      <div class="av" ${av}>${avInner}</div>
+      <div class="who">seen.by.two<span class="date" onclick="editDate('photo',${i})">${fmt(p.date)}</span></div>
+      <button class="icon-btn" onclick="postMenu('photo',${i})"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#000;"><circle cx="5" cy="12" r="1.4" fill="#000" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="#000" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="#000" stroke="none"/></svg></button>
+    </div>
+    <div class="media">${media}</div>
+    <div class="bar">
+      ${heart}
+      <svg viewBox="0 0 24 24" onclick="focusComment(${i})"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-4A8.4 8.4 0 1121 11.5z"/></svg>
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <span class="spacer"></span>
+      <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+    </div>
+    ${cap}
+    <div class="comments" id="cmts-${i}">${comments}</div>
+    <div class="addc">
+      <input class="cname" id="cn-${i}" placeholder="الاسم" value="seen.by.two">
+      <input class="ctext" id="ct-${i}" placeholder="أضف تعليقًا..." oninput="toggleCBtn(${i})">
+      <button id="cb-${i}" onclick="addComment(${i})">نشر</button>
+    </div>
+  </div>`;
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function commentsHTML(p,i){
+  return (p.comments||[]).map((c,ci)=>{
+    return `<div class="cwrap">
+      <div class="c"><b>${esc(c.name)}</b>${esc(c.text)}</div>
+      <div class="trans-out" id="to-${i}-${ci}" dir="rtl"></div>
+      <span class="trans-link" id="tl-${i}-${ci}" onclick="translateComment(${i},${ci})">عرض الترجمة</span>
+    </div>`;
+  }).join('');
+}
+
+async function translateComment(i,ci){
+  const c = state.posts[i].comments[ci];
+  const out = $(`to-${i}-${ci}`), link = $(`tl-${i}-${ci}`);
+  if(!out||!link) return;
+  // toggle off if currently shown
+  if(out.dataset.shown==='1'){
+    out.style.display='none'; out.dataset.shown='0'; link.textContent='عرض الترجمة'; return;
+  }
+  // cached / manual translation
+  if(c.ar){
+    out.textContent=c.ar; out.style.display='block'; out.dataset.shown='1'; link.textContent='عرض النص الأصلي'; return;
+  }
+  link.textContent='جارٍ الترجمة...';
+  try{
+    const url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(c.text)+'&langpair=ko|ar';
+    const res=await fetch(url);
+    const j=await res.json();
+    c.ar=(j && j.responseData && j.responseData.translatedText) ? j.responseData.translatedText : '';
+    if(c.ar) save();
+  }catch(e){ c.ar=''; }
+  if(!c.ar){ link.textContent='تعذّرت الترجمة'; setTimeout(()=>{link.textContent='عرض الترجمة';},1800); return; }
+  out.textContent=c.ar; out.style.display='block'; out.dataset.shown='1'; link.textContent='عرض النص الأصلي';
+}
+
+
+function toggleLike(i){ state.posts[i].liked=!state.posts[i].liked; save(); const el=document.getElementById('post-'+i);
+  const cur=el.querySelector('.bar svg'); const idx=Array.from(el.parentNode.children).indexOf(el);
+  // simplest: rerender just this post
+  el.outerHTML = postHTML(state.posts[i], i);
+}
+function toggleCBtn(i){ const t=$('ct-'+i); $('cb-'+i).classList.toggle('on', t.value.trim().length>0); }
+function focusComment(i){ const t=$('ct-'+i); if(t){ t.focus(); t.scrollIntoView({block:'center'});} }
+function addComment(i){
+  const name=$('cn-'+i).value.trim()||'seen.by.two';
+  const text=$('ct-'+i).value.trim();
+  if(!text) return;
+  if(!state.posts[i].comments) state.posts[i].comments=[];
+  state.posts[i].comments.push({name,text});
+  save();
+  $('cmts-'+i).innerHTML = commentsHTML(state.posts[i], i);
+  $('ct-'+i).value=''; toggleCBtn(i);
+}
+
+/* ---------- reels player ---------- */
+function openReels(index){
+  const wrap=$('reelsWrap');
+  if(state.reels.length===0){
+    wrap.innerHTML = `<div class="reel"><div style="text-align:center;color:#aaa;">
+      <p class="empty">لا توجد مقاطع ريلز بعد.</p>
+      <button style="margin-top:14px;background:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;" onclick="addMedia('reel')">+ إضافة فيديو</button>
+    </div></div>`;
+    showScreen('reelsScreen'); return;
+  }
+  wrap.innerHTML = state.reels.map((r,i)=>{
+    const v = murl(r) ? `<video src="${murl(r)}" loop playsinline controls preload="metadata"></video>` : `<div class="empty">لا يوجد فيديو</div>`;
+    const cap = r.caption?`<div class="cap">${esc(r.caption)}</div>`:'';
+    return `<div class="reel" id="reel-${i}">
+      ${v}
+      <div class="rinfo">
+        <div class="u">🔒 seen.by.two</div>
+        <div class="d" onclick="editDate('reel',${i})">${fmt(r.date)}</div>
+        ${cap}
+      </div>
+    </div>`;
+  }).join('');
+  showScreen('reelsScreen');
+  requestAnimationFrame(()=>{ const el=document.getElementById('reel-'+(index||0)); if(el) el.scrollIntoView(); });
+}
+
+/* ---------- add media ---------- */
+let pendingType=null, pendingFile=null, pendingUrl=null;
+function addMedia(type){
+  closeSheet();
+  pendingType = (type==='reel')?'reel':'photo';
+  if(pendingType==='reel') $('videoInput').click();
+  else $('photoInput').click();
+}
+$('photoInput').onchange = e=>handleFile(e,'photo');
+$('videoInput').onchange = e=>handleFile(e,'reel');
+function handleFile(e,type){
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  if(pendingUrl){ try{ URL.revokeObjectURL(pendingUrl); }catch(_){ } }
+  pendingFile=f; pendingType=type;
+  pendingUrl=URL.createObjectURL(f);
+  openUploadModal();
+}
+
+function openUploadModal(){
+  const isReel = pendingType==='reel';
+  const prev = isReel
+    ? `<video src="${pendingUrl}" muted playsinline></video>`
+    : `<img src="${pendingUrl}">`;
+  $('modalBody').innerHTML = `
+    <div class="mhead">${isReel?'ريلز':'منشور'} جديد</div>
+    <div class="mbody">
+      <div class="preview">${prev}</div>
+      <div>
+        <label>التاريخ</label>
+        <input type="date" id="upDate" value="${today()}">
+      </div>
+      <div>
+        <label>تعليق (اختياري)</label>
+        <textarea id="upCap" rows="2" placeholder="اكتب تعليقًا..."></textarea>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button onclick="closeModal()">إلغاء</button>
+      <button class="primary" id="shareBtn" onclick="saveMedia()">مشاركة</button>
+    </div>`;
+  $('modalBg').classList.add('show');
+}
+async function saveMedia(){
+  if(!pendingFile) return;
+  const btn=$('shareBtn'); if(btn){ btn.textContent='جارٍ الحفظ...'; btn.style.pointerEvents='none'; }
+  const date=$('upDate').value||today();
+  const caption=$('upCap').value.trim();
+  const id='m'+Date.now()+Math.random().toString(36).slice(2,7);
+  let stored=false;
+  try{ await idbPut(id, pendingFile); stored=true; }catch(e){ stored=false; }
+  const item={ mediaId: stored?id:null, src:null, _url:pendingUrl, date, caption, comments:[], liked:false };
+  pendingUrl=null; pendingFile=null;
+  if(pendingType==='reel') state.reels.unshift(item);
+  else state.posts.unshift(item);
+  save(); closeModal();
+  renderProfile();
+  if(pendingType==='reel'){ switchTab('reels'); } else { switchTab('grid'); }
+  if(!stored){ setTimeout(()=>alert('تعذّر حفظ هذا الفيديو على الجهاز؛ سيظهر في هذه الجلسة فقط وقد يختفي بعد التحديث. (تخزين المتصفح ممتلئ أو محظور)'),100); }
+}
+
+/* ---------- date edit ---------- */
+function editDate(type,i){
+  const arr = type==='reel'?state.reels:state.posts;
+  const cur = arr[i].date || today();
+  $('modalBody').innerHTML = `
+    <div class="mhead">تغيير التاريخ</div>
+    <div class="mbody"><input type="date" id="edDate" value="${cur}"></div>
+    <div class="mfoot">
+      <button onclick="closeModal()">إلغاء</button>
+      <button class="primary" onclick="applyDate('${type}',${i})">حفظ</button>
+    </div>`;
+  $('modalBg').classList.add('show');
+}
+function applyDate(type,i){
+  const v=$('edDate').value; const arr=type==='reel'?state.reels:state.posts;
+  arr[i].date=v; save(); closeModal();
+  if(type==='reel') openReels(i); else openFeed(i);
+}
+
+/* ---------- bio edit ---------- */
+function editBio(){
+  $('modalBody').innerHTML = `
+    <div class="mhead">تعديل النبذة</div>
+    <div class="mbody"><textarea id="bioIn" rows="3">${esc(state.bio)}</textarea></div>
+    <div class="mfoot">
+      <button onclick="closeModal()">إلغاء</button>
+      <button class="primary" onclick="applyBio()">حفظ</button>
+    </div>`;
+  $('modalBg').classList.add('show');
+}
+function applyBio(){ state.bio=$('bioIn').value; save(); closeModal(); renderProfile(); }
+
+/* ---------- avatar ---------- */
+function changeAvatar(){ $('avatarInput').click(); }
+$('avatarInput').onchange=e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ state.avatar=r.result; save(); renderProfile(); }; r.readAsDataURL(f);
+};
+
+/* ---------- sheets ---------- */
+function openAddMenu(){
+  $('sheetBody').innerHTML = `
+    <div class="grab"></div>
+    <button class="opt" onclick="addMedia('photo')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 17l-5-5-4 4-2-2-7 7"/></svg>منشور صورة</button>
+    <button class="opt" onclick="addMedia('reel')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 8h18M8 3l2.5 5M14 3l2.5 5"/></svg>ريلز (فيديو)</button>
+  `;
+  $('sheetBg').classList.add('show');
+}
+function postMenu(type,i){
+  $('sheetBody').innerHTML = `
+    <div class="grab"></div>
+    <button class="opt" onclick="closeSheet();editDate('${type}',${i})"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>تعديل التاريخ</button>
+    <button class="opt danger" onclick="deleteItem('${type}',${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>حذف</button>
+  `;
+  $('sheetBg').classList.add('show');
+}
+function deleteItem(type,i){
+  const arr=type==='reel'?state.reels:state.posts;
+  const it=arr[i];
+  if(it){ if(it.mediaId) idbDel(it.mediaId); if(it._url){ try{ URL.revokeObjectURL(it._url); }catch(_){ } } }
+  arr.splice(i,1); save(); closeSheet();
+  renderProfile();
+  if(type==='reel') openReels(0); else openFeed(0);
+}
+function closeSheet(){ $('sheetBg').classList.remove('show'); }
+function closeModal(){ $('modalBg').classList.remove('show'); }
+
+/* ---------- director controls (operator-facing, Korean) ---------- */
+function openDirectorMenu(){
+  $('sheetBody').innerHTML = `
+    <div class="grab"></div>
+    <div style="padding:4px 22px 10px; font-size:12px; color:var(--text2);">감독용 컨트롤 (화면엔 안 보임)</div>
+    <button class="opt" onclick="startIncomingCall()"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .7-.2 1l-2.3 2.2z" fill="currentColor" stroke="none"/></svg>@filmlogue_seongsu 수신 전화 띄우기</button>
+    <button class="opt" onclick="changeCallerAvatar()"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 17l-5-5-4 4-2-2-7 7"/></svg>발신자 사진 설정</button>`;
+  $('sheetBg').classList.add('show');
+}
+
+/* ---------- voice call ---------- */
+let prevScreen='profileScreen';
+function applyCallerAvatar(){
+  const a=state.callerAvatar; const box=$('callAv');
+  if(!box) return;
+  if(a){ box.style.backgroundImage=`url(${a})`; const s=box.querySelector('svg'); if(s) s.style.display='none'; }
+  else { box.style.backgroundImage=''; const s=box.querySelector('svg'); if(s) s.style.display='block'; }
+}
+function changeCallerAvatar(){ closeSheet(); $('callerAvatarInput').click(); }
+$('callerAvatarInput').onchange=e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ state.callerAvatar=r.result; save(); applyCallerAvatar(); }; r.readAsDataURL(f);
+};
+
+function startIncomingCall(){
+  closeSheet();
+  const cur=document.querySelector('.screen:not(.hidden)');
+  prevScreen = cur ? cur.id : 'profileScreen';
+  const cs=$('callScreen');
+  cs.classList.remove('incall');
+  $('callStatus').textContent='مكالمة واردة…';
+  $('callAv').classList.add('ringing');
+  $('acceptBtn').classList.add('ringing');
+  // reset secondary toggles
+  document.querySelectorAll('#callScreen .cbtn.sec').forEach(b=>b.classList.remove('on'));
+  applyCallerAvatar();
+  showScreen('callScreen');
+  startRing();
+}
+function acceptCall(){
+  stopRing();
+  const cs=$('callScreen');
+  cs.classList.add('incall');
+  $('callAv').classList.remove('ringing');
+  $('acceptBtn').classList.remove('ringing');
+  startCallTimer();
+}
+function declineCall(){ stopRing(); endBack(); }
+function endCall(){ stopRing(); stopCallTimer(); endBack(); }
+function endBack(){ stopCallTimer(); $('callScreen').classList.remove('incall'); showScreen(prevScreen||'profileScreen'); }
+function toggleCBtnState(btn){ const c=btn.querySelector('.cbtn'); if(c) c.classList.toggle('on'); }
+
+/* call timer */
+let callTimer=null, callSec=0;
+function startCallTimer(){
+  callSec=0; $('callStatus').textContent='00:00';
+  stopCallTimer();
+  callTimer=setInterval(()=>{
+    callSec++;
+    const m=String(Math.floor(callSec/60)).padStart(2,'0');
+    const s=String(callSec%60).padStart(2,'0');
+    $('callStatus').textContent=`${m}:${s}`;
+  },1000);
+}
+function stopCallTimer(){ if(callTimer){ clearInterval(callTimer); callTimer=null; } }
+
+/* synthesized ringtone (no copyright) + vibration */
+let _ac=null, ringInt=null;
+function startRing(){
+  try{
+    _ac=_ac||new (window.AudioContext||window.webkitAudioContext)();
+    if(_ac.state==='suspended') _ac.resume();
+    const beep=()=>{
+      const ctx=_ac, t=ctx.currentTime, dur=1.1;
+      const g=ctx.createGain();
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.16,t+0.06);
+      g.gain.setValueAtTime(0.16,t+dur-0.12);
+      g.gain.linearRampToValueAtTime(0,t+dur);
+      g.connect(ctx.destination);
+      [440,480].forEach(f=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(g); o.start(t); o.stop(t+dur); });
+    };
+    beep(); ringInt=setInterval(beep,2600);
+  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([700,1300,700,1300,700,1300,700,1300,700,1300]); }catch(e){}
+}
+function stopRing(){
+  if(ringInt){ clearInterval(ringInt); ringInt=null; }
+  try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){}
+}
+
+/* ---------- init ---------- */
+showScreen('profileScreen');
+renderProfile();
+(async()=>{ try{ await hydrate(); }catch(e){} renderProfile(); })();
+</script>
+</body>
+</html>
